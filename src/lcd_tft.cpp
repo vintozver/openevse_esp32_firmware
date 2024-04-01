@@ -228,11 +228,11 @@ unsigned long LcdTask::loop(MicroTasks::WakeReason reason)
 
       char buffer[32];
 
-      snprintf(buffer, sizeof(buffer), "%d", _evse->getChargeCurrent());
-      render_right_text_box(buffer, 66, 220, 154, &FreeSans24pt7b, TFT_BLACK, TFT_WHITE, !_full_update, 3);
-      if(_full_update) {
-        render_left_text_box("A", 224, 200, 34, &FreeSans24pt7b, TFT_BLACK, TFT_WHITE, false, 1);
-      }
+      snprintf(buffer, sizeof(buffer), "%.0f V %.2f A", _evse->getVoltage(), _evse->getAmps());
+      render_right_text_box(buffer, 66, 190, 188, &FreeSans12pt7b, TFT_BLACK, TFT_WHITE, !_full_update, 1);
+
+      snprintf(buffer, sizeof(buffer), "SET %d A", _evse->getChargeCurrent());
+      render_right_text_box(buffer, 66, 220, 188, &FreeSans12pt7b, TFT_BLACK, TFT_WHITE, !_full_update, 1);
 
       render_centered_text_box(esp_hostname.c_str(), INFO_BOX_X, 74, INFO_BOX_WIDTH, &FreeSans9pt7b, TFT_OPENEVSE_TEXT, TFT_WHITE, !_full_update);
 

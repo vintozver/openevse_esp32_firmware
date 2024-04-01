@@ -720,8 +720,6 @@ void EvseMonitor::getStatusFromEvse(bool allowStart)
 
 void EvseMonitor::getChargeCurrentAndVoltageFromEvse()
 {
-  if(_state.isCharging())
-  {
     DBUGLN("Get charge current/voltage status");
     _openevse.getChargeCurrentAndVoltage([this](int ret, double a, double volts)
     {
@@ -745,9 +743,6 @@ void EvseMonitor::getChargeCurrentAndVoltageFromEvse()
         _data_ready.ready(EVSE_MONITOR_AMP_AND_VOLT_DATA_READY);
       }
     });
-  } else {
-    _data_ready.ready(EVSE_MONITOR_AMP_AND_VOLT_DATA_READY);
-  }
   // Update _energyMeter
   _energyMeter.update();
 }
