@@ -235,7 +235,6 @@ void EvseMonitor::evseBoot(const char *firmware)
       DBUGF("scale = %ld, offset = %ld", scale, offset);
       _current_sensor_scale = scale;
       _current_sensor_offset = offset;
-
       _boot_ready.ready(EVSE_MONITOR_CURRENT_SENSOR_BOOT_READY);
     }
   });
@@ -319,6 +318,12 @@ unsigned long EvseMonitor::loop(MicroTasks::WakeReason reason)
   DBUG(", _count = ");
   DBUGLN(_count);
 
+  // unlock openevse fw compiled with BOOTLOCK
+  if (isBootLocked()) {
+    unlock();
+    DBUGLN("Unlocked BOOTLOCK");
+  }
+
   if(_heartbeat)
   {
     _openevse.heartbeatPulse([] (int ret)
@@ -346,12 +351,6 @@ unsigned long EvseMonitor::loop(MicroTasks::WakeReason reason)
   // Fixed in latest OpenEvse firwmare
   if (isCharging()){
     verifyPilot();
-  }
-
-   // unlock openevse fw compiled with BOOTLOCK
-  if (isBootLocked() && OPENEVSE_STATE_STARTING != getEvseState()) {
-    unlock();
-    DBUGLN("Unlocked BOOTLOCK");
   }
 
   _count ++;
@@ -416,7 +415,8 @@ EvseMonitor::ServiceLevel EvseMonitor::getActualServiceLevel()
     ServiceLevel::L1;
 }
 
-void EvseMonitor::unlock() {
+void EvseMonitor::unlock()
+{
   // Unlock OpenEVSE if compiled with BOOTLOCK
   _openevse.clearBootLock([this](int ret)
   {
@@ -427,9 +427,9 @@ void EvseMonitor::unlock() {
     else {
       DBUGF("Unlock OpenEVSE failed");
     }
-
   });
 }
+
 void EvseMonitor::enable()
 {
   OpenEVSE.enable([this](int ret)
@@ -730,7 +730,7 @@ void EvseMonitor::getChargeCurrentAndVoltageFromEvse()
         if(VOLTAGE_MINIMUM <= volts && volts <= VOLTAGE_MAXIMUM) {
           _voltage = volts;
         }
-        _power = _amp * _voltage; 
+        _power = _amp * _voltage;
         if (config_threephase_enabled()) {
           _power = _power * 3;
         }
@@ -796,3 +796,17 @@ bool EvseMonitor::importTotalEnergy()
     });
   return true;
 }
+
+void EvseMonitor::getAmmeterSettings()
+{
+  _openevse.getAmmeterSettings([this](int ret, long scale, long offset)
+  {
+    if(RAPI_RESPONSE_OK == ret)
+    {
+      DBUGF("scale = %ld, offset = %ld", scale, offset);
+      _current_sensor_scale = scale;
+      _current_sensor_offset = offset;
+    }
+  });
+}
+

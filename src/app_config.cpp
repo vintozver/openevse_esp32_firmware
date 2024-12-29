@@ -45,6 +45,7 @@ String lang;
 // Web server authentication (leave blank for none)
 String www_username;
 String www_password;
+String www_certificate_id;
 
 // Advanced settings
 String esp_hostname;
@@ -66,6 +67,7 @@ uint32_t mqtt_port;
 String mqtt_topic;
 String mqtt_user;
 String mqtt_pass;
+String mqtt_certificate_id;
 String mqtt_solar;
 String mqtt_grid_ie;
 String mqtt_vrms;
@@ -153,6 +155,7 @@ ConfigOpt *opts[] =
 // Web server authentication (leave blank for none)
   new ConfigOptDefinition<String>(www_username, "", "www_username", "au"),
   new ConfigOptSecret(www_password, "", "www_password", "ap"),
+  new ConfigOptDefenition<String>(www_certificate_id, "", "www_certificate_id", "wc"),
 
 // Advanced settings
   new ConfigOptDefinition<String>(esp_hostname, esp_hostname_default, "hostname", "hn"),
@@ -177,6 +180,7 @@ ConfigOpt *opts[] =
   new ConfigOptDefinition<String>(mqtt_topic, esp_hostname, "mqtt_topic", "mt"),
   new ConfigOptDefinition<String>(mqtt_user, "emonpi", "mqtt_user", "mu"),
   new ConfigOptSecret(mqtt_pass, "emonpimqtt2016", "mqtt_pass", "mp"),
+  new ConfigOptDefinition<String>(mqtt_certificate_id, "", "mqtt_certificate_id", "mct"),
   new ConfigOptDefinition<String>(mqtt_solar, "", "mqtt_solar", "mo"),
   new ConfigOptDefinition<String>(mqtt_grid_ie, "emon/emonpi/power1", "mqtt_grid_ie", "mg"),
   new ConfigOptDefinition<String>(mqtt_vrms, "emon/emonpi/vrms", "mqtt_vrms", "mv"),
@@ -357,12 +361,12 @@ void config_changed(String name)
       emoncms_updated = true;
     }
     timeManager.setSntpEnabled(config_sntp_enabled());
-    ArduinoOcppTask::notifyConfigChanged();
+    OcppTask::notifyConfigChanged();
     evse.setSleepForDisable(!config_pause_uses_disabled());
   } else if(name.startsWith("mqtt_")) {
     mqtt_restart();
   } else if(name.startsWith("ocpp_")) {
-    ArduinoOcppTask::notifyConfigChanged();
+    OcppTask::notifyConfigChanged();
   } else if(name.startsWith("emoncms_")) {
     emoncms_updated = true;
   } else if(name.startsWith("scheduler_")) {
@@ -516,6 +520,7 @@ bool config_deserialize(DynamicJsonDocument &doc)
       evse.configureCurrentSensorScale(doc["scale"], doc["offset"]);
       config_modified = true;
       DBUGLN("scale changed");
+      evse.getAmmeterSettings();
     }
   }
   #endif

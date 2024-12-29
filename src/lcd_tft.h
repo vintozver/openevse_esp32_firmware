@@ -15,9 +15,61 @@
 #include <TFT_eSPI.h>
 #include <PNGdec.h>
 
+#define LCD_MAX_LEN 16
+#define LCD_MAX_LINES 2
+
 class LcdTask : public MicroTasks::Task
 {
   private:
+    class Message;
+
+    class Message
+    {
+      private:
+        Message *_next;
+        char _msg[LCD_MAX_LEN + 1];
+        int _x;
+        int _y;
+        int _time;
+        uint32_t _clear:1;
+
+      public:
+        Message(const __FlashStringHelper *msg, int x, int y, int time, uint32_t flags);
+        Message(String &msg, int x, int y, int time, uint32_t flags);
+        Message(const char *msg, int x, int y, int time, uint32_t flags);
+
+        Message *getNext() {
+          return _next;
+        }
+        void setNext(Message *msg) {
+          _next = msg;
+        }
+
+        const char *getMsg() {
+          return _msg;
+        }
+
+        int getX() {
+          return _x;
+        }
+
+        int getY() {
+          return _y;
+        }
+
+        int getTime() {
+          return _time;
+        }
+
+        bool getClear() {
+          return _clear;
+        }
+    };
+
+    Message *_head;
+    Message *_tail;
+    uint32_t _nextMessageTime;
+
     TFT_eSPI _tft;                  // The TFT display
 
 #ifdef ENABLE_DOUBLE_BUFFER
@@ -43,8 +95,31 @@ class LcdTask : public MicroTasks::Task
     EvseManager *_evse;
     Scheduler *_scheduler;
     ManualOverride *_manual;
+#ifdef TFT_BACKLIGHT_TIMEOUT_MS
+    long _last_backlight_wakeup = 0;
+    uint8_t _previous_evse_state;
+    bool _previous_vehicle_state;
+#endif //TFT_BACKLIGHT_TIMEOUT_MS
+    bool wifi_client;
+    bool wifi_connected;
+
+    char _msg[LCD_MAX_LINES][LCD_MAX_LEN + 1];
+    bool _msg_cleared;
 
     static void png_draw(PNGDRAW *pDraw);
+
+    void display(Message *msg, uint32_t flags);
+    unsigned long displayNextMessage();
+    void clearLine(int line);
+    void showText(int x, int y, const char *msg, bool clear);
+
+    String getLine(int line);
+
+#ifdef TFT_BACKLIGHT_TIMEOUT_MS
+    void wakeBacklight();
+    void timeoutBacklight();
+#endif //TFT_BACKLIGHT_TIMEOUT_MS
+
   protected:
     void setup();
     unsigned long loop(MicroTasks::WakeReason reason);
@@ -54,6 +129,7 @@ class LcdTask : public MicroTasks::Task
     void render_centered_text_box(const char *text, int16_t x, int16_t y, int16_t width, const GFXfont *font, uint16_t text_colour, uint16_t back_colour, bool fill_back, uint8_t size = 1);
     void render_right_text_box(const char *text, int16_t x, int16_t y, int16_t width, const GFXfont *font, uint16_t text_colour, uint16_t back_colour, bool fill_back, uint8_t size = 1);
     void render_left_text_box(const char *text, int16_t x, int16_t y, int16_t width, const GFXfont *font, uint16_t text_colour, uint16_t back_colour, bool fill_back, uint8_t size = 1);
+    void render_data_box(const char *title, const char *text, int16_t x, int16_t y, int16_t width, int16_t height, bool full_update = true);
     void render_info_box(const char *title, const char *text, int16_t x, int16_t y, int16_t width, int16_t height, bool full_update = true);
     void load_font(const char *filename);
 
@@ -67,6 +143,7 @@ class LcdTask : public MicroTasks::Task
     void display(const __FlashStringHelper *msg, int x, int y, int time, uint32_t flags);
     void display(String &msg, int x, int y, int time, uint32_t flags);
     void display(const char *msg, int x, int y, int time, uint32_t flags);
+    void setWifiMode(bool client, bool connected);
 
     void fill_screen(uint16_t color) {
       _screen.fillScreen(color);

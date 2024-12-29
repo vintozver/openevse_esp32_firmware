@@ -348,7 +348,7 @@ class EvseManager : public MicroTasks::Task
     bool publishEnergyMeter() {
       return _monitor.publishEnergyMeter();
     }
-		void createEnergyMeterJsonDoc(JsonDocument &doc) {
+    void createEnergyMeterJsonDoc(JsonDocument &doc) {
       _monitor.createEnergyMeterJsonDoc(doc);
     }
     long getFaultCountGFCI() {
@@ -429,6 +429,9 @@ class EvseManager : public MicroTasks::Task
     }
     long getCurrentSensorOffset() {
       return _monitor.getCurrentSensorOffset();
+    }
+    void getAmmeterSettings() {
+      _monitor.getAmmeterSettings();
     }
 
     void enableFeature(uint8_t feature, bool enabled, std::function<void(int ret)> callback = NULL) {
